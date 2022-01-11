@@ -110,7 +110,8 @@ namespace BezoekersAPI
                 CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
                 CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
                 CloudTable table = tableClient.GetTableReference("bezoekers");
-
+                
+                // GET (1 afspraak)
                 if (req.Method == HttpMethods.Get)
                 {
                     TableQuery<AfspraakEntity> query = new TableQuery<AfspraakEntity>().Where(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, id));
@@ -132,6 +133,7 @@ namespace BezoekersAPI
 
                     return new OkObjectResult(afspraak);
                 }
+                // PUT
                 else if (req.Method == HttpMethods.Put)
                 {
                     var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
@@ -170,6 +172,7 @@ namespace BezoekersAPI
 
                     return new OkObjectResult(afspraakEntity);
                 }
+                // DELETE
                 else
                 {
                     TableQuery<AfspraakEntity> query = new TableQuery<AfspraakEntity>().Where(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, id));
