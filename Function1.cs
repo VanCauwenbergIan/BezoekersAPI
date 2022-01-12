@@ -112,7 +112,7 @@ namespace BezoekersAPI
                 CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
                 CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
                 CloudTable table = tableClient.GetTableReference("bezoekers");
-
+                
                 // GET (1 afspraak)
                 if (req.Method == HttpMethods.Get)
                 {

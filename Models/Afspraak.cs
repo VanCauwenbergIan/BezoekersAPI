@@ -13,5 +13,6 @@ namespace BezoekersAPI.Models
         public string Email { get; set; }
         public string Telefoon { get; set; }
         public string Tijdstip { get; set; }
+        public string Locatie { get; set; }
     }
 }
