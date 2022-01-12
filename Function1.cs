@@ -57,7 +57,8 @@ namespace BezoekersAPI
                             Naam = result.Naam,
                             Email = result.Email,
                             Telefoon = result.Telefoon,
-                            Tijdstip = result.Tijdstip
+                            Tijdstip = result.Tijdstip,
+                            Locatie = result.Locatie
                         };
 
                         afspraken.Add(afspraak);
@@ -80,7 +81,8 @@ namespace BezoekersAPI
                         Naam = afspraak.Naam,
                         Email = afspraak.Email,
                         Telefoon = afspraak.Telefoon,
-                        Tijdstip = afspraak.Tijdstip
+                        Tijdstip = afspraak.Tijdstip,
+                        Locatie = afspraak.Locatie
                     };
 
                     TableOperation insertOperation = TableOperation.Insert(afspraakEntity);
@@ -110,7 +112,7 @@ namespace BezoekersAPI
                 CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
                 CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
                 CloudTable table = tableClient.GetTableReference("bezoekers");
-                
+
                 // GET (1 afspraak)
                 if (req.Method == HttpMethods.Get)
                 {
@@ -129,6 +131,7 @@ namespace BezoekersAPI
                         afspraak.Email = afspraakEntity.Email;
                         afspraak.Telefoon = afspraakEntity.Telefoon;
                         afspraak.Tijdstip = afspraakEntity.Tijdstip;
+                        afspraak.Locatie = afspraakEntity.Locatie;
                     }
 
                     return new OkObjectResult(afspraak);
@@ -145,7 +148,8 @@ namespace BezoekersAPI
                         Naam = afspraak.Naam,
                         Email = afspraak.Email,
                         Telefoon = afspraak.Telefoon,
-                        Tijdstip = afspraak.Tijdstip
+                        Tijdstip = afspraak.Tijdstip,
+                        Locatie = afspraak.Locatie
                     };
 
                     // Replace heeft een ETag nodig en partitonKey mag niet veranderen
