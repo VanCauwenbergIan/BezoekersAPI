@@ -200,5 +200,66 @@ namespace BezoekersAPI
                 return new StatusCodeResult(500);
             }
         }
+
+        [FunctionName("Locatie")]
+        public async Task<IActionResult> Locatie(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "afspraken/{id}/locatie")] HttpRequest req, string id,
+            ILogger log)
+        {
+            try
+            {
+                var connectionString = Environment.GetEnvironmentVariable("ConnectionStringStorage");
+
+                CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
+                CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
+                CloudTable table = tableClient.GetTableReference("bezoekers");
+
+                var requestBody = await new StreamReader(req.Body).ReadToEndAsync();
+                var data = JsonConvert.DeserializeObject<EnkelLocatie>(requestBody);
+
+                TableQuery<AfspraakEntity> selectQuery = new TableQuery<AfspraakEntity>().Where(TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, id));
+
+                var resultSelect = await table.ExecuteQuerySegmentedAsync<AfspraakEntity>(selectQuery, null);
+
+                Afspraak afspraak = new Afspraak();
+
+                foreach (AfspraakEntity afspraakEntity in resultSelect.Results)
+                {
+                    afspraak.AfspraakId = id;
+                    afspraak.Datum = afspraakEntity.PartitionKey;
+                    afspraak.Naam = afspraakEntity.Naam;
+                    afspraak.Voornaam = afspraakEntity.Voornaam;
+                    afspraak.Email = afspraakEntity.Email;
+                    afspraak.Telefoon = afspraakEntity.Telefoon;
+                    afspraak.Tijdstip = afspraakEntity.Tijdstip;
+                    afspraak.Locatie = afspraakEntity.Locatie;
+                }
+
+                afspraak.Locatie = data.Locatie;
+
+                AfspraakEntity afspraakEntityUpdate = new AfspraakEntity(afspraak.Datum, id)
+                {
+                    Voornaam = afspraak.Voornaam,
+                    Naam = afspraak.Naam,
+                    Email = afspraak.Email,
+                    Telefoon = afspraak.Telefoon,
+                    Tijdstip = afspraak.Tijdstip,
+                    Locatie = afspraak.Locatie
+                };
+
+                afspraakEntityUpdate.ETag = "*";
+
+                TableOperation replaceOperation = TableOperation.Replace(afspraakEntityUpdate);
+                await table.ExecuteAsync(replaceOperation);
+
+                return new OkObjectResult(afspraakEntityUpdate);
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex.ToString());
+
+                return new StatusCodeResult(500);
+            }
+        }
     }
 }
