@@ -201,7 +201,63 @@ namespace BezoekersAPI
             }
         }
 
-        [FunctionName("Locatie")]
+        [FunctionName("AfsprakenVoorMail")]
+        public async Task<IActionResult> AfsprakenVoorMail(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", Route = "afsprakenvoormail/{mail}")] HttpRequest req, string mail,
+            ILogger log)
+        {
+            try
+            {
+                var connectionString = Environment.GetEnvironmentVariable("ConnectionStringStorage");
+
+                CloudStorageAccount storageAccount = CloudStorageAccount.Parse(connectionString);
+                CloudTableClient tableClient = storageAccount.CreateCloudTableClient();
+                CloudTable table = tableClient.GetTableReference("bezoekers");
+
+                TableQuery<AfspraakEntity> query = new TableQuery<AfspraakEntity>().Where(TableQuery.GenerateFilterCondition("Email", QueryComparisons.Equal, mail));
+
+                TableContinuationToken token = null;
+
+                var results = new List<AfspraakEntity>();
+
+                do
+                {
+                    var queryResult = table.ExecuteQuerySegmented(query, token);
+                    results.AddRange(queryResult.Results);
+                    token = queryResult.ContinuationToken;
+                }
+                while (token != null);
+
+                var afspraken = new List<Afspraak>();
+
+                foreach (var result in results)
+                {
+                    Afspraak afspraak = new Afspraak()
+                    {
+                        AfspraakId = result.RowKey,
+                        Datum = result.PartitionKey,
+                        Voornaam = result.Voornaam,
+                        Naam = result.Naam,
+                        Email = result.Email,
+                        Telefoon = result.Telefoon,
+                        Tijdstip = result.Tijdstip,
+                        Locatie = result.Locatie
+                    };
+
+                    afspraken.Add(afspraak);
+                }
+
+                return new OkObjectResult(afspraken);
+            }
+            catch (Exception ex)
+            {
+                log.LogError(ex.ToString());
+
+                return new StatusCodeResult(500);
+            }
+        }
+
+            [FunctionName("Locatie")]
         public async Task<IActionResult> Locatie(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "afspraken/{id}/locatie")] HttpRequest req, string id,
             ILogger log)
