@@ -10,6 +10,9 @@ using Newtonsoft.Json;
 using Microsoft.Azure.Cosmos.Table;
 using System.Collections.Generic;
 using BezoekersAPI.Models;
+using Azure.Storage.Queues;
+using System.Text;
+using System.Linq;
 
 namespace BezoekersAPI
 {
@@ -64,6 +67,8 @@ namespace BezoekersAPI
                         afspraken.Add(afspraak);
                     }
 
+                    afspraken = SortAfspraken(afspraken);
+
                     return new OkObjectResult(afspraken);
                 }
                 // POST
@@ -88,6 +93,8 @@ namespace BezoekersAPI
                     TableOperation insertOperation = TableOperation.Insert(afspraakEntity);
 
                     await table.ExecuteAsync(insertOperation);
+
+                    await SendToQueue(afspraak);
 
                     return new OkObjectResult(afspraak);
                 }
@@ -257,7 +264,7 @@ namespace BezoekersAPI
             }
         }
 
-            [FunctionName("Locatie")]
+        [FunctionName("Locatie")]
         public async Task<IActionResult> Locatie(
             [HttpTrigger(AuthorizationLevel.Anonymous, "put", Route = "afspraken/{id}/locatie")] HttpRequest req, string id,
             ILogger log)
@@ -316,6 +323,32 @@ namespace BezoekersAPI
 
                 return new StatusCodeResult(500);
             }
+        }
+        private async Task SendToQueue(Afspraak afspraak)
+        {
+            try
+            {
+                var connectionString = Environment.GetEnvironmentVariable("ConnectionStringStorage");
+                QueueClient queueClient = new QueueClient(connectionString, "afsprakenmails");
+
+                await queueClient.CreateIfNotExistsAsync();
+
+                string json = JsonConvert.SerializeObject(afspraak);
+                var bytes = Encoding.UTF8.GetBytes(json);
+
+                await queueClient.SendMessageAsync(Convert.ToBase64String(bytes));
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+        }
+
+        private List<Afspraak> SortAfspraken(List<Afspraak> afspraken)
+        {
+            afspraken = afspraken.OrderBy(afspraak => afspraak.Datum.Split('-')[2]).ThenBy(afspraak => afspraak.Datum.Split('-')[1]).ThenBy(afspraak => afspraak.Datum.Split('-')[0]).ThenBy(afspraak => afspraak.Tijdstip).ToList();
+
+            return afspraken;
         }
     }
 }
