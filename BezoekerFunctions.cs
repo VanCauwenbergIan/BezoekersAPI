@@ -254,6 +254,8 @@ namespace BezoekersAPI
                     afspraken.Add(afspraak);
                 }
 
+                afspraken = SortAfspraken(afspraken);
+
                 return new OkObjectResult(afspraken);
             }
             catch (Exception ex)
